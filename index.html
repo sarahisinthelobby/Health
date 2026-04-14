@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#FFF;color:#1A1A1A;-webkit-font-smoothing:antialiased;font-size:13px;line-height:1.6}
+::selection{background:#E0E0E0}
+.app{max-width:860px;margin:0 auto;padding:0 24px}
+
+/* Header */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid #E8E8E8}
+.hdr-left{display:flex;align-items:center;gap:28px}
+.logo{font-size:14px;font-weight:600;letter-spacing:-.03em}
+.nav{display:flex;gap:2px}
+.nav a{font-size:12px;color:#AAA;text-decoration:none;padding:5px 12px;border-radius:4px;cursor:pointer;transition:color .12s}
+.nav a:hover{color:#1A1A1A}
+.nav a.on{color:#4A90D9;font-weight:500}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.hdr-right button{background:none;border:none;cursor:pointer;color:#BBB;font-size:16px;padding:2px 6px;transition:color .12s;line-height:1}
+.hdr-right button:hover{color:#1A1A1A}
+.wl{font-size:11px;color:#AAA}.wl b{color:#1A1A1A;font-weight:500}
+.data-btns{display:flex;gap:4px;margin-left:12px;padding-left:12px;border-left:1px solid #E8E8E8}
+.data-btn{font-family:'Inter',system-ui,sans-serif;font-size:10px;color:#AAA;background:none;border:1px solid #E8E8E8;padding:3px 10px;border-radius:4px;cursor:pointer;transition:all .12s}
+.data-btn:hover{color:#4A90D9;border-color:#B8D4F0}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#FFF;font-size:11px;padding:8px 20px;border-radius:6px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+.toast.show{opacity:1}
+.auth-status{font-size:10px;color:#AAA;display:flex;align-items:center;gap:6px}
+.auth-status .email{color:#4A90D9}
+.auth-btn{font-family:'Inter',system-ui,sans-serif;font-size:10px;color:#AAA;background:none;border:1px solid #E8E8E8;padding:3px 10px;border-radius:4px;cursor:pointer;transition:all .12s}
+.auth-btn:hover{color:#4A90D9;border-color:#B8D4F0}
+.login-overlay{position:fixed;inset:0;background:rgba(255,255,255,.95);z-index:200;display:flex;align-items:center;justify-content:center}
+.login-box{width:320px}
+.login-box h2{font-size:16px;font-weight:600;margin-bottom:4px;letter-spacing:-.02em}
+.login-box p{font-size:12px;color:#AAA;margin-bottom:20px}
+.login-box input{width:100%;font-family:'Inter',system-ui,sans-serif;font-size:13px;padding:10px 12px;border:1px solid #E0E0E0;border-radius:6px;margin-bottom:8px;outline:none;transition:border-color .15s}
+.login-box input:focus{border-color:#4A90D9}
+.login-box .login-submit{width:100%;font-family:'Inter',system-ui,sans-serif;font-size:13px;font-weight:500;padding:10px;border:none;border-radius:6px;background:#1A1A1A;color:#FFF;cursor:pointer;transition:background .12s;margin-top:4px}
+.login-box .login-submit:hover{background:#333}
+.login-box .login-toggle{font-size:11px;color:#AAA;text-align:center;margin-top:12px;cursor:pointer}
+.login-box .login-toggle a{color:#4A90D9;cursor:pointer;text-decoration:none}
+.login-box .login-error{font-size:11px;color:#C04030;margin-top:8px;display:none}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#4AA54A;display:inline-block}
+
+/* Panels */
+.pn{display:none;padding:24px 0 48px}.pn.on{display:block}
+
+/* ─── HEALTH PROFILE ─── */
+.profile-header{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:0;margin-bottom:24px}
+.ph-item{padding:0 16px 0 0}
+.ph-item:first-child{padding-left:0}
+.ph-label{font-size:10px;color:#BBB;font-weight:500;margin-bottom:2px}
+.ph-val{font-size:14px;font-weight:500}
+.ph-val.small{font-size:12px;font-weight:400;color:#888}
+
+.analysis-box{padding:16px 0;margin-bottom:24px}
+.analysis-title{font-size:12px;font-weight:600;margin-bottom:8px}
+.analysis-text{font-size:12px;color:#666;line-height:1.7}
+
+.results-grid{display:grid;grid-template-columns:1fr;gap:0}
+.cat-title{font-size:11px;font-weight:600;padding:12px 0 6px;letter-spacing:-.01em}
+.cat-title:first-child{padding-top:0}
+.cat-status{font-size:9px;font-weight:500;color:#AAA;margin-left:6px;letter-spacing:.03em}
+.cat-status.flag{color:#1A1A1A}
+
+.res-row{display:grid;grid-template-columns:180px 80px 50px 60px 1fr;gap:8px;padding:4px 0;align-items:center}
+.res-name{font-size:11.5px;color:#1A1A1A}
+.res-val{font-size:11.5px;font-weight:500;text-align:right}
+.res-val.v-ok{color:#1A1A1A}
+.res-val.v-warn{color:#B08A30}
+.res-val.v-bad{color:#C04030}
+.res-unit{font-size:10px;color:#BBB}
+.res-ref{font-size:9px;color:#CCC;text-align:center;white-space:nowrap}
+.res-bar{height:12px;background:#F5F5F3;border-radius:6px;position:relative;overflow:hidden}
+.res-range{position:absolute;height:100%;background:#E8F5E8;border-radius:6px}
+.res-marker{position:absolute;top:1px;width:10px;height:10px;border-radius:50%;border:2px solid #FFF;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+.res-marker.m-ok{background:#6AB06A}
+.res-marker.m-warn{background:#D4A03A}
+.res-marker.m-bad{background:#C04030}
+.res-note{font-size:10px;color:#999;grid-column:1/-1;padding:2px 0 4px;line-height:1.5}
+.res-legend{display:flex;gap:12px;align-items:center;margin:8px 0 16px;font-size:10px;color:#AAA}
+.res-legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle}
+
+/* ─── MEAL PLAN ─── */
+.stabs{display:flex;gap:4px;margin-bottom:20px}
+.stab{font-family:'Inter',system-ui,sans-serif;font-size:11px;color:#AAA;background:none;border:1px solid #E8E8E8;padding:5px 14px;border-radius:4px;cursor:pointer;transition:all .12s}
+.stab:hover{color:#1A1A1A;border-color:#CCC}
+.stab.on{color:#4A90D9;border-color:#4A90D9;font-weight:500}
+.rc{display:none}.rc.on{display:block}
+.rcg{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.rd{padding:6px 0}
+.rdn{font-size:10px;font-weight:600;margin-bottom:1px}
+.rdl{font-size:11.5px;color:#888;line-height:1.55}.rdl b{color:#1A1A1A;font-weight:500;font-size:10px;margin-right:1px}
+.rdl.suggest{color:#BBB;font-style:italic}
+.rn{font-size:11px;color:#999;margin-top:20px;padding-top:12px;line-height:1.65}
+
+/* ─── SPORT ─── */
+.sport-week{display:grid;grid-template-columns:1fr;gap:0}
+.sport-day{display:grid;grid-template-columns:90px 1fr;gap:8px;padding:6px 0;align-items:baseline}
+.sport-day-name{font-size:11px;font-weight:500}
+.sport-day-act{font-size:11.5px;color:#888}
+.sport-day-act b{color:#1A1A1A;font-weight:500}
+.sport-detail{margin-top:20px}
+.sport-detail-title{font-size:12px;font-weight:600;margin-bottom:12px}
+.sdg{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.sd-col-title{font-size:11px;font-weight:600;margin-bottom:8px}
+.sd-col-title span{font-weight:400;color:#AAA;font-size:10px;margin-left:4px}
+.rxs{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#CCC;margin:10px 0 3px}.rxs:first-child{margin-top:0}
+.rx{display:flex;justify-content:space-between;align-items:baseline;padding:2.5px 0;font-size:12px}
+.rx .n{color:#1A1A1A}.rx .d{color:#AAA;font-size:10px}
+
+/* ─── TRACKER ─── */
+.dy{padding:0}
+.dy.td{border-left:none}
+.dy.td .d-name{color:#1A1A1A;font-weight:600}
+.dy.td .d-name::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;background:#4A90D9;margin-right:6px;vertical-align:middle;position:relative;top:-1px}
+.dh{display:flex;align-items:center;padding:9px 0;cursor:pointer;user-select:none;gap:10px}
+.d-name{font-weight:500;font-size:12px;min-width:82px}
+.d-date{font-size:11px;color:#CCC;min-width:46px}
+.d-sub{color:#AAA;font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-tags{display:flex;gap:3px}
+.tg{font-size:9px;font-weight:500;padding:2px 7px;border-radius:3px;border:1px solid #E8E8E8;color:#999}
+.d-checks{display:flex;gap:4px;align-items:center;margin-left:auto}
+.d-ck{width:14px;height:14px;border-radius:3px;border:1.5px solid #E0E0E0;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;transition:all .12s}
+.d-ck.done{background:#EEF4FB;border-color:#B8D4F0;color:#4A90D9}
+.d-ck.all-done{background:#E8F5E8;border-color:#A8D8A8;color:#4AA54A}
+.d-ck-label{font-size:8px;color:#CCC;letter-spacing:.02em}
+.d-chev{color:#CCC;font-size:12px;transition:transform .2s}
+.dy.op .d-chev{transform:rotate(180deg)}
+.d-body{display:none;padding:4px 0 12px}
+.dy.op .d-body{display:block}
+.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 28px}
+.d-row{display:flex;align-items:center;gap:6px;min-height:26px}
+.d-row-label{font-size:10px;color:#BBB;min-width:36px;font-weight:500;flex-shrink:0}
+.d-row-full{grid-column:1/-1;padding-top:2px}
+.chs{display:flex;flex-wrap:wrap;gap:3px}
+.ch{font-size:10.5px;padding:4px 10px;border-radius:4px;border:1px solid #E8E8E8;background:#FFF;cursor:pointer;transition:all .1s;user-select:none;color:#BBB}
+.ch:hover{border-color:#B8D4F0;color:#4A90D9}
+.ch.on{background:#EEF4FB;border-color:#C5D9F0;color:#3A7BC8;font-weight:500}
+.ch.oh{background:#EEF4FB;border-color:#C5D9F0;color:#3A7BC8;font-weight:500}
+.mi{flex:1;font-family:'Inter',system-ui,sans-serif;font-size:11.5px;padding:3px 0;border:none;background:transparent;color:#1A1A1A;outline:none;min-width:0}
+.mi::placeholder{color:#DDD;font-size:10px;font-weight:300}
+.mi:focus{color:#1A1A1A}
+.wa{display:flex;align-items:center;gap:3px}
+.wd{width:16px;height:16px;border-radius:50%;border:1.5px solid #E8E8E8;cursor:pointer;transition:all .1s;background:#FFF}
+.wd:hover{border-color:#B8D4F0}
+.wd.on{background:#EEF4FB;border-color:#B8D4F0}
+.wc{font-size:10px;color:#CCC;margin-left:3px}
+.ni{flex:1;font-family:'Inter',system-ui,sans-serif;font-size:11.5px;padding:3px 0;border:none;background:transparent;color:#1A1A1A;outline:none;min-width:0}
+.ni::placeholder{color:#DDD;font-size:10px;font-weight:300}
+.wi{width:48px;font-family:'Inter',system-ui,sans-serif;font-size:11.5px;padding:3px 0;border:none;background:transparent;color:#1A1A1A;outline:none;text-align:left}
+.wi::placeholder{color:#DDD;font-size:10px;font-weight:300}
+.sum{display:flex;gap:24px;padding:14px 0;margin-top:6px}
+.si{font-size:11px;color:#AAA}.si .v{font-weight:600;color:#1A1A1A}
+
+@media(max-width:700px){
+  .app{padding:0 16px}
+  .hdr-left{gap:16px}
+  .hdr{flex-direction:column;align-items:flex-start;gap:10px}
+  .profile-header{grid-template-columns:1fr 1fr;gap:10px}
+  .rcg,.sdg{grid-template-columns:1fr}
+  .d-grid{grid-template-columns:1fr}
+  .d-row-full{grid-column:1}
+  .d-sub,.d-date{display:none}
+  .sum{flex-wrap:wrap;gap:14px}
+  .nav a{padding:5px 8px;font-size:11px}
+  .res-row{grid-template-columns:140px 60px 40px 50px 1fr}
+  .sport-day{grid-template-columns:70px 1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>Health Tracker</h2>
+    <p>Sign in to sync your data across devices</p>
+    <input type="email" id="authEmail" placeholder="Email">
+    <input type="password" id="authPass" placeholder="Password">
+    <button class="login-submit" id="authSubmit" onclick="doAuth()">Sign in</button>
+    <div class="login-toggle" id="authToggle">No account? <a onclick="toggleAuthMode()">Sign up</a></div>
+    <div class="login-error" id="authError"></div>
+  </div>
+</div>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">Health</div>
+    <div class="nav">
+      <a class="on" onclick="page('health',this)">Check-up</a>
+      <a onclick="page('meals',this)">Meals</a>
+      <a onclick="page('sport',this)">Sport</a>
+      <a onclick="page('tracker',this)">Tracker</a>
+    </div>
+  </div>
+  <div class="hdr-right" id="weekNav" style="display:none">
+    <button onclick="cw(-1)">&larr;</button>
+    <div class="wl" id="wl"></div>
+    <button onclick="cw(1)">&rarr;</button>
+  </div>
+  <div class="data-btns" id="authArea">
+    <span class="auth-status" id="authStatus"></span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════ CHECK-UP ═══════════════ -->
+<div class="pn on" id="pn-health">
+
+<div class="profile-header">
+  <div class="ph-item"><div class="ph-label">Name</div><div class="ph-val">Sarah</div></div>
+  <div class="ph-item"><div class="ph-label">Age</div><div class="ph-val">30</div></div>
+  <div class="ph-item"><div class="ph-label">Weight</div><div class="ph-val">—<span style="font-size:10px;color:#BBB;font-weight:400"> kg</span></div></div>
+  <div class="ph-item"><div class="ph-label">Height</div><div class="ph-val">—<span style="font-size:10px;color:#BBB;font-weight:400"> cm</span></div></div>
+  <div class="ph-item"><div class="ph-label">BMI</div><div class="ph-val">—</div></div>
+</div>
+
+<div class="analysis-box">
+  <div class="analysis-title">Analysis &middot; Blood draw April 2026</div>
+  <div class="analysis-text">
+    Everything connects to one root cause: <b>insulin resistance</b>. Fasting insulin (12.8) and HOMA-IR (3.0) are elevated, causing the liver to suppress SHBG (19) which leaves more free testosterone (5.1) biologically active — driving hair thinning and jawline acne despite normal total testosterone. The same insulin excess pushes ApoB (106) higher and HDL (50) lower, creating a metabolic cardiovascular pattern. hs-CRP (3.4) and Total Protein (8.1) are likely strep artifacts — retest in 3 months. Vitamin D (29) is suboptimal. Thyroid, kidney (elite), liver enzymes, iron, B12, blood counts are all healthy.
+    <br><br>
+    <b>The chain:</b> lower insulin → raise SHBG → reduce free testosterone → improve hair, skin, energy, cardiovascular markers.
+  </div>
+</div>
+
+<div class="results-grid" id="resultsGrid"></div>
+<script>
+const RESULTS = [
+  {cat:'Metabolism', status:'needs attention', flag:true, note:'Glucose and A1c are normal — pancreas is compensating. But insulin is high, meaning cells are resistant. This is the root driver.', items:[
+    {n:'HOMA-IR',v:3.00,u:'ratio',min:0,max:6,lo:0,hi:1.5},
+    {n:'Fasting Insulin',v:12.8,u:'uIU/mL',min:0,max:25,lo:2,hi:8},
+    {n:'Fasting Glucose',v:95,u:'mg/dL',min:60,max:130,lo:70,hi:100},
+    {n:'Hemoglobin A1c',v:5.3,u:'%',min:4,max:7,lo:4.0,hi:5.6},
+    {n:'C-peptide',v:1.54,u:'ng/mL',min:0,max:4,lo:0.8,hi:2.0},
+  ]},
+  {cat:'Hormones', status:'SHBG-driven', flag:true, note:'Low SHBG (insulin-suppressed) → excess free testosterone → hair thinning + jawline acne. Progesterone normal for follicular phase. FSH/LH ratio healthy.', items:[
+    {n:'SHBG',v:19,u:'nmol/L',min:0,max:150,lo:40,hi:120},
+    {n:'Free Testosterone',v:5.1,u:'pg/mL',min:0,max:8,lo:0.5,hi:4.5},
+    {n:'Free Androgen Index',v:5.48,u:'ratio',min:0,max:10,lo:0.5,hi:5.0},
+    {n:'Testosterone, Total',v:30,u:'ng/dL',min:0,max:70,lo:15,hi:55},
+    {n:'Free Weakly-bound T',v:10.8,u:'ng/dL',min:0,max:15,lo:1,hi:8},
+    {n:'Estradiol',v:30,u:'pg/mL',min:0,max:200,lo:30,hi:120},
+    {n:'FSH',v:7.6,u:'mIU/mL',min:0,max:20,lo:2,hi:12},
+    {n:'LH',v:6.2,u:'mIU/mL',min:0,max:20,lo:1,hi:12},
+    {n:'Progesterone',v:0.4,u:'ng/mL',min:0,max:2,lo:0,hi:1.0},
+    {n:'DHEA-S',v:155,u:'ug/dL',min:0,max:400,lo:65,hi:380},
+  ]},
+  {cat:'Heart & Lipids', status:'watch ApoB', flag:true, note:'ApoB elevated from insulin-driven VLDL overproduction. Lp(a) low — genetic risk minimal. HDL low for premenopausal woman. Pattern is metabolic, not genetic.', items:[
+    {n:'Apolipoprotein B',v:106,u:'mg/dL',min:0,max:160,lo:0,hi:90},
+    {n:'LDL-C',v:129,u:'mg/dL',min:0,max:200,lo:0,hi:100},
+    {n:'Non-HDL C',v:146,u:'mg/dL',min:0,max:220,lo:0,hi:130},
+    {n:'HDL-C',v:50,u:'mg/dL',min:20,max:100,lo:60,hi:100},
+    {n:'Total Cholesterol',v:196,u:'mg/dL',min:100,max:300,lo:125,hi:200},
+    {n:'Triglycerides',v:76,u:'mg/dL',min:0,max:200,lo:0,hi:100},
+    {n:'TG/HDL-C',v:1.52,u:'ratio',min:0,max:5,lo:0,hi:2.0},
+    {n:'Lipoprotein (a)',v:15,u:'nmol/L',min:0,max:120,lo:0,hi:30},
+  ]},
+  {cat:'Inflammation', status:'retest needed', flag:false, note:'Both likely elevated from recent strep throat. Retest in 3 months for clean baseline.', items:[
+    {n:'hs-CRP',v:3.4,u:'mg/L',min:0,max:10,lo:0,hi:1.0},
+    {n:'Total Protein',v:8.1,u:'g/dL',min:5,max:10,lo:6.0,hi:8.0},
+  ]},
+  {cat:'Thyroid', status:'healthy', flag:false, items:[
+    {n:'TSH',v:1.70,u:'mIU/L',min:0,max:6,lo:0.4,hi:4.0},
+    {n:'T3 Free',v:3.3,u:'pg/mL',min:1,max:5,lo:2.3,hi:4.2},
+    {n:'T4 Free',v:1.5,u:'ng/dL',min:0.5,max:2.5,lo:0.8,hi:1.8},
+    {n:'TPO Antibodies',v:0.5,u:'IU/mL',min:0,max:35,lo:0,hi:9},
+  ]},
+  {cat:'Kidney', status:'excellent', flag:false, items:[
+    {n:'GFR',v:105,u:'mL/min',min:40,max:140,lo:90,hi:140},
+    {n:'Creatinine',v:0.88,u:'mg/dL',min:0.3,max:1.5,lo:0.5,hi:1.1},
+    {n:'Cystatin C',v:0.83,u:'mg/L',min:0.3,max:1.5,lo:0.5,hi:1.0},
+    {n:'BUN:Creatinine',v:18,u:'ratio',min:5,max:30,lo:6,hi:22},
+    {n:'Urea Nitrogen',v:16,u:'mg/dL',min:5,max:30,lo:7,hi:20},
+  ]},
+  {cat:'Liver', status:'', flag:false, items:[
+    {n:'ALT',v:18,u:'IU/L',min:0,max:60,lo:0,hi:33},
+    {n:'AST',v:15,u:'IU/L',min:0,max:60,lo:0,hi:32},
+    {n:'Alk. Phosphatase',v:66,u:'IU/L',min:20,max:160,lo:35,hi:105},
+    {n:'Total Bilirubin',v:0.4,u:'mg/dL',min:0,max:2,lo:0.1,hi:1.2},
+    {n:'Albumin',v:4.6,u:'g/dL',min:3,max:6,lo:3.5,hi:5.0},
+    {n:'Globulin',v:3.6,u:'g/dL',min:1.5,max:5,lo:2.0,hi:3.5},
+  ]},
+  {cat:'Iron & Nutrition', status:'', flag:false, note:'Vitamin D suboptimal — supplement 2000-4000 IU D3 daily with K2.', items:[
+    {n:'Ferritin',v:73,u:'ng/mL',min:0,max:200,lo:30,hi:150},
+    {n:'Iron',v:77,u:'ug/dL',min:20,max:180,lo:50,hi:170},
+    {n:'TIBC',v:291,u:'ug/dL',min:150,max:450,lo:250,hi:370},
+    {n:'Iron Saturation',v:26,u:'%',min:5,max:50,lo:20,hi:45},
+    {n:'Vitamin B12',v:577,u:'pg/mL',min:100,max:1000,lo:200,hi:900},
+    {n:'Folate',v:6.8,u:'ng/mL',min:2,max:20,lo:3,hi:17},
+    {n:'Vitamin D',v:29,u:'ng/mL',min:10,max:80,lo:40,hi:60},
+    {n:'Leptin',v:8.6,u:'ng/mL',min:0,max:25,lo:3,hi:15},
+  ]},
+  {cat:'Adrenal & Bone', status:'', flag:false, items:[
+    {n:'Cortisol',v:10.0,u:'ug/dL',min:2,max:25,lo:5,hi:18},
+    {n:'Creatine Kinase',v:63,u:'mIU/L',min:20,max:200,lo:26,hi:140},
+  ]},
+  {cat:'Blood counts', status:'', flag:false, items:[
+    {n:'Hemoglobin',v:14.6,u:'g/dL',min:10,max:18,lo:12,hi:16},
+    {n:'Hematocrit',v:44.4,u:'%',min:30,max:55,lo:36,hi:46},
+    {n:'RBC',v:5.05,u:'x10E6/uL',min:3,max:6.5,lo:3.9,hi:5.5},
+    {n:'WBC',v:8.0,u:'x10E3/uL',min:2,max:14,lo:3.5,hi:10.5},
+    {n:'Platelets',v:374,u:'x10E3/uL',min:100,max:500,lo:150,hi:400},
+  ]},
+  {cat:'Electrolytes', status:'', flag:false, items:[
+    {n:'Sodium',v:137,u:'mmol/L',min:125,max:150,lo:136,hi:145},
+    {n:'Potassium',v:4.1,u:'mmol/L',min:3,max:6,lo:3.5,hi:5.0},
+    {n:'Calcium',v:9.2,u:'mg/dL',min:7,max:12,lo:8.5,hi:10.5},
+    {n:'Chloride',v:101,u:'mmol/L',min:90,max:115,lo:96,hi:106},
+    {n:'CO2',v:28,u:'mmol/L',min:15,max:35,lo:22,hi:30},
+  ]},
+];
+
+function fmtRange(v){return v%1===0?v.toString():v.toFixed(1)}
+function buildResults(){
+  const g=document.getElementById('resultsGrid');
+  let h='<div class="res-legend"><span><span class="res-legend-dot" style="background:#E8F5E8;display:inline-block"></span> optimal range</span><span><span class="res-legend-dot" style="background:#6AB06A;display:inline-block"></span> in range</span><span><span class="res-legend-dot" style="background:#D4A03A;display:inline-block"></span> borderline</span><span><span class="res-legend-dot" style="background:#C04030;display:inline-block"></span> out of range</span></div>';
+  for(const c of RESULTS){
+    h+=`<div class="cat-title">${c.cat}${c.status?` <span class="cat-status${c.flag?' flag':''}">${c.status}</span>`:''}</div>`;
+    for(const r of c.items){
+      const pct=((r.v-r.min)/(r.max-r.min))*100;
+      const rLo=((r.lo-r.min)/(r.max-r.min))*100;
+      const rHi=((r.hi-r.min)/(r.max-r.min))*100;
+      const inRange=r.v>=r.lo&&r.v<=r.hi;
+      const nearRange=(r.v>=r.lo*0.85&&r.v<r.lo)||(r.v>r.hi&&r.v<=r.hi*1.15);
+      const status=inRange?'ok':nearRange?'warn':'bad';
+      const markerLeft=Math.max(2,Math.min(96,pct));
+      h+=`<div class="res-row">`;
+      h+=`<span class="res-name">${r.n}</span>`;
+      h+=`<span class="res-val v-${status}">${r.v}</span>`;
+      h+=`<span class="res-unit">${r.u}</span>`;
+      h+=`<span class="res-ref">${fmtRange(r.lo)}–${fmtRange(r.hi)}</span>`;
+      h+=`<div class="res-bar"><div class="res-range" style="left:${rLo}%;width:${rHi-rLo}%"></div><div class="res-marker m-${status}" style="left:calc(${markerLeft}% - 5px)"></div></div>`;
+      h+=`</div>`;
+    }
+    if(c.note) h+=`<div class="res-note">${c.note}</div>`;
+  }
+  g.innerHTML=h;
+}
+buildResults();
+</script>
+
+</div>
+
+<!-- ═══════════════ MEALS ═══════════════ -->
+<div class="pn" id="pn-meals">
+  <div class="stabs" id="mealTabs"></div>
+  <div class="rc on" id="rc-thisweek">
+    <div class="rcg">
+      <div>
+        <div class="rd"><div class="rdn">Monday</div><div class="rdl"><b>L</b> Salade thon pdt harissa</div><div class="rdl"><b>D</b> Reste short rib lasagna</div><div class="rdl suggest">tip: big green salad before the lasagna, eat salad first</div></div>
+        <div class="rd"><div class="rdn">Tuesday</div><div class="rdl"><b>L</b> Chou fleur b&eacute;chamel + salade verte mozza fenouil</div><div class="rdl"><b>D</b> Salmon bowl avec tomates chickpea</div><div class="rdl suggest">tip: add avocado or olive oil to the salmon bowl</div></div>
+        <div class="rd"><div class="rdn">Wednesday</div><div class="rdl"><b>L</b> Chou fleur + salade</div><div class="rdl suggest">tip: add protein — tin of sardines, boiled egg, or chickpeas</div><div class="rdl"><b>D</b> Poisson pan&eacute; pdt crousty carottes r&ocirc;ties sauce tarta</div><div class="rdl suggest">tip: less potatoes, more roasted carrots</div></div>
+        <div class="rd"><div class="rdn">Thursday</div><div class="rdl"><b>L</b> Jambon salade pdt</div><div class="rdl suggest">tip: add egg or cheese for protein, less potato</div><div class="rdl"><b>D</b> Out poker — protein-first, skip bread basket</div></div>
+      </div>
+      <div>
+        <div class="rd"><div class="rdn">Friday</div><div class="rdl"><b>M</b> skip or eggs + veg</div><div class="rdl"><b>D</b> Salade cesar</div><div class="rdl suggest">tip: skip or reduce croutons, extra chicken</div></div>
+        <div class="rd"><div class="rdn">Saturday</div><div class="rdl"><b>M</b> cook something fun</div><div class="rdl"><b>L</b> leftovers or grain bowl</div><div class="rdl"><b>D</b> cook — batch protein + veg for Sunday</div></div>
+        <div class="rd"><div class="rdn">Sunday</div><div class="rdl"><b>L</b> TBD — use Saturday batch</div><div class="rdl"><b>D</b> Lamb roti + roasted vegetables</div><div class="rdl suggest">tip: serve with veg not heavy starch, small sweet potato ok</div></div>
+      </div>
+    </div>
+    <div class="rn">All mornings optional — skip if not hungry, make lunch substantial before 1pm. General rule: protein first, veggies before carbs, generous olive oil.</div>
+  </div>
+  <div class="rc" id="rc-w1">
+    <div class="rcg">
+      <div>
+        <div class="rd"><div class="rdn">Sunday &middot; batch</div><div class="rdl"><b>M</b> Greek yogurt + walnuts + berries + honey</div><div class="rdl"><b>L</b> Roast chicken + roasted veg + lentils</div><div class="rdl"><b>D</b> Pan-seared salmon, green salad, avocado</div></div>
+        <div class="rd"><div class="rdn">Monday</div><div class="rdl"><b>M</b> Scrambled eggs + spinach + feta</div><div class="rdl"><b>L</b> Lentils + chicken + roasted veg + harissa</div><div class="rdl"><b>D</b> Ribeye + roasted cauliflower + salad</div></div>
+        <div class="rd"><div class="rdn">Tuesday</div><div class="rdl"><b>M</b> Greek yogurt + almonds + cinnamon</div><div class="rdl"><b>L</b> Last chicken over greens + lentils + avocado</div><div class="rdl"><b>D</b> Sardines + white beans + salad + sourdough</div></div>
+        <div class="rd"><div class="rdn">Wednesday &middot; batch</div><div class="rdl"><b>M</b> 2 eggs + avocado + cherry tomatoes</div><div class="rdl"><b>L</b> Tuna bowl: eggs, pepper, olives, harissa, yogurt</div><div class="rdl"><b>D</b> Tagine + chickpeas + saut&eacute;ed greens</div></div>
+      </div>
+      <div>
+        <div class="rd"><div class="rdn">Thursday</div><div class="rdl"><b>M</b> Walnuts + cheese</div><div class="rdl"><b>L</b> Leftover tagine + greens + nuts</div><div class="rdl"><b>D</b> White fish + roasted fennel + sweet potato</div></div>
+        <div class="rd"><div class="rdn">Friday</div><div class="rdl"><b>M</b> Smoked salmon + cucumber + cream cheese</div><div class="rdl"><b>L</b> Chickpea + feta + tahini salad</div><div class="rdl"><b>D</b> Out — protein-first</div></div>
+        <div class="rd"><div class="rdn">Saturday</div><div class="rdl"><b>M</b> Shakshuka or omelette + sourdough</div><div class="rdl"><b>L</b> Quinoa + veg + halloumi + hummus</div><div class="rdl"><b>D</b> Lamb chops + tabbouleh + eggplant</div></div>
+      </div>
+    </div>
+    <div class="rn">All mornings optional. Batch cook Sunday + Wednesday.</div>
+  </div>
+  <div class="rc" id="rc-w2">
+    <div class="rcg">
+      <div>
+        <div class="rd"><div class="rdn">Sunday &middot; batch</div><div class="rdl"><b>M</b> Turkish eggs over garlicky yogurt + chili butter</div><div class="rdl"><b>L</b> Slow pork shoulder + roasted veg + chimichurri</div><div class="rdl"><b>D</b> Pok&eacute;: salmon, brown rice, avocado, edamame</div></div>
+        <div class="rd"><div class="rdn">Monday</div><div class="rdl"><b>M</b> Cottage cheese + almonds + raspberries</div><div class="rdl"><b>L</b> Pulled pork + black beans + chimichurri</div><div class="rdl"><b>D</b> Thai lettuce wraps: turkey, lemongrass, peanuts</div></div>
+        <div class="rd"><div class="rdn">Tuesday</div><div class="rdl"><b>M</b> Smoked trout + cream cheese + cucumber</div><div class="rdl"><b>L</b> Last pork: salad + sweet potato + seeds</div><div class="rdl"><b>D</b> Miso cod + bok choy + soba</div></div>
+        <div class="rd"><div class="rdn">Wednesday &middot; batch</div><div class="rdl"><b>M</b> Omelette + goat cheese + sun-dried tomatoes</div><div class="rdl"><b>L</b> Tuna bowl (half potato, half chickpea)</div><div class="rdl"><b>D</b> Dal + tandoori chicken + spinach</div></div>
+      </div>
+      <div>
+        <div class="rd"><div class="rdn">Thursday</div><div class="rdl"><b>M</b> Dates + almond butter + sea salt</div><div class="rdl"><b>L</b> Leftover dal + chicken + yogurt + cilantro</div><div class="rdl"><b>D</b> Lamb kofta + fattoush + hummus</div></div>
+        <div class="rd"><div class="rdn">Friday</div><div class="rdl"><b>M</b> Hard-boiled eggs + everything seasoning</div><div class="rdl"><b>L</b> Last dal or banh mi salad</div><div class="rdl"><b>D</b> Oysters + fish or steak + negroni</div></div>
+        <div class="rd"><div class="rdn">Saturday</div><div class="rdl"><b>M</b> Huevos rancheros: eggs + black beans + salsa + avocado</div><div class="rdl"><b>L</b> Ni&ccedil;oise: tuna, eggs, green beans, olives</div><div class="rdl"><b>D</b> Duck breast + roasted roots + cheese</div></div>
+      </div>
+    </div>
+    <div class="rn">All mornings optional. Batch cook Sunday + Wednesday.</div>
+  </div>
+</div>
+
+<!-- ═══════════════ SPORT ═══════════════ -->
+<div class="pn" id="pn-sport">
+  <div class="sport-week">
+    <div class="sport-day"><span class="sport-day-name">Monday</span><span class="sport-day-act"><b>Resistance A</b> — lower body dominant + push</span></div>
+    <div class="sport-day"><span class="sport-day-name">Tuesday</span><span class="sport-day-act">Pilates</span></div>
+    <div class="sport-day"><span class="sport-day-name">Wednesday</span><span class="sport-day-act">Run — 30-40 min moderate pace</span></div>
+    <div class="sport-day"><span class="sport-day-name">Thursday</span><span class="sport-day-act">Pilates</span></div>
+    <div class="sport-day"><span class="sport-day-name">Friday</span><span class="sport-day-act"><b>Resistance B</b> — upper body dominant + hinge</span></div>
+    <div class="sport-day"><span class="sport-day-name">Saturday</span><span class="sport-day-act">Active — hike, swim, or rest</span></div>
+    <div class="sport-day"><span class="sport-day-name">Sunday</span><span class="sport-day-act">Rest</span></div>
+  </div>
+  <div class="rn" style="margin-bottom:0">+ Walk 15-20 min after lunch and dinner every day</div>
+
+  <div class="sport-detail">
+    <div class="sdg">
+      <div>
+        <div class="sd-col-title">Session A <span>Monday</span></div>
+        <div class="rxs">Warm-up &middot; 5 min</div>
+        <div class="rx"><span class="n">Row or bike</span><span class="d">3 min</span></div>
+        <div class="rx"><span class="n">Bodyweight squats</span><span class="d">10 reps</span></div>
+        <div class="rx"><span class="n">Glute bridges</span><span class="d">10 reps</span></div>
+        <div class="rx"><span class="n">Band pull-aparts</span><span class="d">10 reps</span></div>
+        <div class="rx"><span class="n">Dead bugs</span><span class="d">6 each</span></div>
+        <div class="rxs">Main lifts</div>
+        <div class="rx"><span class="n">Goblet squat</span><span class="d">3&times;10-12 &bull; 90s</span></div>
+        <div class="rx"><span class="n">Romanian deadlift</span><span class="d">3&times;10-12 &bull; 90s</span></div>
+        <div class="rx"><span class="n">DB bench press</span><span class="d">3&times;10-12 &bull; 90s</span></div>
+        <div class="rx"><span class="n">Single-leg hip thrust</span><span class="d">3&times;10 each &bull; 60s</span></div>
+        <div class="rxs">Accessories</div>
+        <div class="rx"><span class="n">DB overhead press</span><span class="d">3&times;10-12 &bull; 60s</span></div>
+        <div class="rx"><span class="n">Pallof press</span><span class="d">3&times;8 each &bull; 45s</span></div>
+        <div class="rx"><span class="n">Farmer&rsquo;s carry</span><span class="d">3&times;30s &bull; 45s</span></div>
+      </div>
+      <div>
+        <div class="sd-col-title">Session B <span>Friday</span></div>
+        <div class="rxs">Warm-up &middot; 5 min</div>
+        <div class="rx"><span class="n">Row or bike</span><span class="d">3 min</span></div>
+        <div class="rx"><span class="n">Bodyweight squats</span><span class="d">10 reps</span></div>
+        <div class="rx"><span class="n">Glute bridges</span><span class="d">10 reps</span></div>
+        <div class="rx"><span class="n">Band pull-aparts</span><span class="d">10 reps</span></div>
+        <div class="rx"><span class="n">Dead bugs</span><span class="d">6 each</span></div>
+        <div class="rxs">Main lifts</div>
+        <div class="rx"><span class="n">Sumo deadlift</span><span class="d">3&times;10-12 &bull; 90s</span></div>
+        <div class="rx"><span class="n">Single-arm DB row</span><span class="d">3&times;10 each &bull; 60s</span></div>
+        <div class="rx"><span class="n">Walking lunges</span><span class="d">3&times;10 each &bull; 90s</span></div>
+        <div class="rx"><span class="n">Lat pulldown</span><span class="d">3&times;10-12 &bull; 60s</span></div>
+        <div class="rxs">Accessories</div>
+        <div class="rx"><span class="n">Cable face pull</span><span class="d">3&times;12-15 &bull; 45s</span></div>
+        <div class="rx"><span class="n">Rev. lunge to press</span><span class="d">3&times;8 each &bull; 60s</span></div>
+        <div class="rx"><span class="n">Dead hang</span><span class="d">3&times;20-30s &bull; 45s</span></div>
+      </div>
+    </div>
+    <div class="rn">Weeks 1-2: learn form, light weights. Weeks 3-4: find working weights (last 2-3 reps hard). Week 5+: increase when all reps doable. Eat protein within 1-2h post-training.</div>
+  </div>
+</div>
+
+<!-- ═══════════════ TRACKER ═══════════════ -->
+<div class="pn" id="pn-tracker">
+  <div id="dg"></div>
+  <div class="sum" id="sm"></div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPA_URL='https://jqfkudxeimaravplmjpb.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxZmt1ZHhlaW1hcmF2cGxtanBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMTU3MTcsImV4cCI6MjA5MTY5MTcxN30.Ml08zCGFdhSfb7YKhLfqB1W7stil9F4IiD_0hHcoPu0';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+let currentUser=null;
+let authMode='signin';
+let saveTimer=null;
+let cache={};
+
+const D=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const SP={0:['Resistance A','Walk after meals'],1:['Pilates','Walk after meals'],2:['Run','Walk after meals'],3:['Pilates','Walk after meals'],4:['Resistance B','Walk after meals'],5:['Hike / Swim','Walk after meals'],6:['Rest day','Walk after meals']};
+const H=['Spearmint tea x2','Coffee before 1pm','Protein every meal','Veggies before carbs','No snacking'];
+let wo=0;
+
+// ─── Auth ───
+function toggleAuthMode(){
+  authMode=authMode==='signin'?'signup':'signin';
+  document.getElementById('authSubmit').textContent=authMode==='signin'?'Sign in':'Create account';
+  document.getElementById('authToggle').innerHTML=authMode==='signin'?'No account? <a onclick="toggleAuthMode()">Sign up</a>':'Have an account? <a onclick="toggleAuthMode()">Sign in</a>';
+  document.getElementById('authError').style.display='none';
+}
+
+async function doAuth(){
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  const errEl=document.getElementById('authError');
+  errEl.style.display='none';
+  if(!email||!pass){errEl.textContent='Enter email and password';errEl.style.display='block';return;}
+  
+  let result;
+  if(authMode==='signup'){
+    result=await sb.auth.signUp({email,password:pass});
+  } else {
+    result=await sb.auth.signInWithPassword({email,password:pass});
+  }
+  
+  if(result.error){
+    errEl.textContent=result.error.message;
+    errEl.style.display='block';
+  } else if(authMode==='signup'&&result.data?.user&&!result.data.session){
+    errEl.textContent='Check your email to confirm your account';
+    errEl.style.display='block';
+    errEl.style.color='#4A90D9';
+  }
+}
+
+async function onAuth(session){
+  if(session?.user){
+    currentUser=session.user;
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('authStatus').innerHTML=`<span class="sync-dot"></span><span class="email">${currentUser.email}</span><button class="auth-btn" onclick="doLogout()">Sign out</button>`;
+    cache={};
+    await rw();
+    toast('Signed in');
+  } else {
+    currentUser=null;
+    document.getElementById('loginOverlay').style.display='flex';
+    document.getElementById('authStatus').innerHTML='';
+  }
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  currentUser=null;
+  cache={};
+  document.getElementById('loginOverlay').style.display='flex';
+  document.getElementById('authStatus').innerHTML='';
+}
+
+sb.auth.onAuthStateChange((_,session)=>onAuth(session));
+
+// ─── Data ───
+async function ld(){
+  const key=wk();
+  if(cache[key])return JSON.parse(JSON.stringify(cache[key]));
+  if(!currentUser)return{};
+  const{data}=await sb.from('tracker_data').select('data').eq('user_id',currentUser.id).eq('week_key',key).single();
+  const result=data?.data||{};
+  cache[key]=result;
+  return JSON.parse(JSON.stringify(result));
+}
+
+function sv(d){
+  const key=wk();
+  cache[key]=JSON.parse(JSON.stringify(d));
+  // Debounce saves
+  if(saveTimer)clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>syncToDb(key,d),500);
+  us();
+}
+
+async function syncToDb(key,d){
+  if(!currentUser)return;
+  const{error}=await sb.from('tracker_data').upsert({
+    user_id:currentUser.id,
+    week_key:key,
+    data:d,
+    updated_at:new Date().toISOString()
+  },{onConflict:'user_id,week_key'});
+  if(error)console.error('Save error:',error);
+}
+
+function gd(data,i){return data[i]||{sport:[],meals:{m:'',l:'',d:''},water:0,habits:[],notes:'',weight:'',weightTime:''}}
+
+async function tg(i,k,v){const data=await ld(),d=gd(data,i),a=d[k]||[];const x=a.indexOf(v);x>=0?a.splice(x,1):a.push(v);d[k]=a;data[i]=d;sv(data);rd(i)}
+async function sm(i,k,v){const data=await ld(),d=gd(data,i);d.meals[k]=v;data[i]=d;sv(data)}
+async function sw(i,n){const data=await ld(),d=gd(data,i);d.water=d.water===n?n-1:n;data[i]=d;sv(data);rd(i)}
+async function sn(i,v){const data=await ld(),d=gd(data,i);d.notes=v;data[i]=d;sv(data)}
+async function sW(i,v){const data=await ld(),d=gd(data,i);d.weight=v;data[i]=d;sv(data)}
+async function sT(i,v){const data=await ld(),d=gd(data,i);d.weightTime=v;data[i]=d;sv(data)}
+function td(i){document.getElementById('d'+i).classList.toggle('op')}
+
+// ─── Navigation ───
+function page(id,el){
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('on'));
+  document.querySelectorAll('.pn').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('pn-'+id).classList.add('on');
+  const showWeek=id==='tracker'||id==='meals';
+  document.getElementById('weekNav').style.display=showWeek?'flex':'none';
+  if(id==='meals')updateMealTabs();
+}
+
+function sr(id,b){document.querySelectorAll('.stab').forEach(t=>t.classList.remove('on'));document.querySelectorAll('.rc').forEach(c=>c.classList.remove('on'));b.classList.add('on');document.getElementById('rc-'+id).classList.add('on')}
+function wd(o){const n=new Date(),m=new Date(n);m.setDate(n.getDate()-((n.getDay()+6)%7)+o*7);return Array.from({length:7},(_,i)=>{const d=new Date(m);d.setDate(m.getDate()+i);return d})}
+function dk(d){return d.toISOString().split('T')[0]}
+function wk(){return 'w-'+dk(wd(wo)[0])}
+
+// ─── Render day ───
+async function rd(i){
+  const data=await ld(),d=gd(data,i),dates=wd(wo),date=dates[i];
+  const it=dk(date)===dk(new Date()),el=document.getElementById('d'+i),wo2=el.classList.contains('op');
+  const sc=d.sport.length,mc=[d.meals.m,d.meals.l,d.meals.d].filter(x=>x&&x.trim()).length;
+  const hc=(d.habits||[]).length,hd=sc+mc+d.water+hc>0||(d.weight&&d.weight.trim());
+  
+  const hasSport=d.sport.filter(s=>s!=='Walk after meals').length>0;
+  const hasWalk=d.sport.includes('Walk after meals');
+  const hasWater=d.water>=6;
+  const hasHabits=hc>=H.length;
+  const checks=[
+    {label:'S',done:hasSport,title:'Sport'},
+    {label:'W',done:hasWalk,title:'Walk'},
+    {label:'💧',done:hasWater,title:'Water 6+'},
+    {label:'H',done:hasHabits,title:'Habits'},
+  ];
+  const allDone=checks.every(c=>c.done);
+  const checksHtml=checks.map(c=>`<div class="d-ck ${c.done?(allDone?'all-done':'done'):''}" title="${c.title}">${c.done?'✓':''}</div>`).join('');
+
+  const sub=d.meals.l||d.meals.d||'';
+  const dateStr=date.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const sph=SP[i].map(s=>`<div class="ch ${d.sport.includes(s)?'on':''}" onclick="tg(${i},'sport','${s.replace(/'/g,"\\'")}')">${s}</div>`).join('');
+  const hh=H.map(h=>`<div class="ch ${(d.habits||[]).includes(h)?'oh':''}" onclick="tg(${i},'habits','${h.replace(/'/g,"\\'")}')">${h}</div>`).join('');
+  let wh='';for(let j=1;j<=8;j++)wh+=`<div class="wd ${j<=d.water?'on':''}" onclick="sw(${i},${j})"></div>`;wh+=`<span class="wc">${d.water}/8</span>`;
+  el.className='dy'+(it?' td':'')+(hd?' hd':'')+(wo2||(it&&!el.dataset.t)?' op':'');el.dataset.t='1';
+  el.innerHTML=`<div class="dh" onclick="td(${i})"><span class="d-name">${D[i]}</span><span class="d-date">${dateStr}</span><span class="d-sub">${sub}</span><div class="d-checks">${checksHtml}</div></div><div class="d-body"><div class="d-grid"><div class="d-row"><span class="d-row-label">Sport</span><div class="chs">${sph}</div></div><div class="d-row"><span class="d-row-label">Water</span><div class="wa">${wh}</div></div><div class="d-row"><span class="d-row-label">Morn</span><input class="mi" placeholder="skip or..." value="${(d.meals.m||'').replace(/"/g,'&quot;')}" onchange="sm(${i},'m',this.value)"></div><div class="d-row"><span class="d-row-label">Weight</span><input class="wi" placeholder="kg" value="${(d.weight||'').replace(/"/g,'&quot;')}" onchange="sW(${i},this.value)"><span style="color:#CCC;font-size:10px">at</span><input class="wi" placeholder="time" value="${(d.weightTime||'').replace(/"/g,'&quot;')}" onchange="sT(${i},this.value)" style="width:40px"></div><div class="d-row"><span class="d-row-label">Lunch</span><input class="mi" value="${(d.meals.l||'').replace(/"/g,'&quot;')}" onchange="sm(${i},'l',this.value)"></div><div class="d-row"><span class="d-row-label">Notes</span><input class="ni" placeholder="..." value="${(d.notes||'').replace(/"/g,'&quot;')}" onchange="sn(${i},this.value)"></div><div class="d-row"><span class="d-row-label">Dinner</span><input class="mi" value="${(d.meals.d||'').replace(/"/g,'&quot;')}" onchange="sm(${i},'d',this.value)"></div><div class="d-row-full"><div class="chs">${hh}</div></div></div></div>`;
+}
+
+function updateMealTabs(){
+  const dates=wd(wo);
+  const weekNum=Math.floor((dates[0].getTime()-new Date(2026,3,13).getTime())/(7*24*60*60*1000));
+  const isThisWeek=wo===0;
+  const isW1=((weekNum%2)+2)%2===0;
+  const tabs=document.getElementById('mealTabs');
+  let tabsHtml='';
+  if(isThisWeek){
+    tabsHtml=`<button class="stab on" onclick="sr('thisweek',this)">This week</button><button class="stab" onclick="sr('w1',this)">Week A &middot; Mediterranean</button><button class="stab" onclick="sr('w2',this)">Week B &middot; Global</button>`;
+  } else {
+    const activeW=isW1?'w1':'w2';
+    tabsHtml=`<button class="stab ${activeW==='w1'?'on':''}" onclick="sr('w1',this)">Week A &middot; Mediterranean</button><button class="stab ${activeW==='w2'?'on':''}" onclick="sr('w2',this)">Week B &middot; Global</button>`;
+    document.querySelectorAll('.rc').forEach(c=>c.classList.remove('on'));
+    document.getElementById('rc-'+activeW).classList.add('on');
+  }
+  tabs.innerHTML=tabsHtml;
+  if(isThisWeek){
+    document.querySelectorAll('.rc').forEach(c=>c.classList.remove('on'));
+    document.getElementById('rc-thisweek').classList.add('on');
+  }
+}
+
+async function rw(){
+  const dates=wd(wo),d0=dates[0].toLocaleDateString('en-US',{month:'short',day:'numeric'}),d6=dates[6].toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('wl').innerHTML=wo===0?`<b>This week</b> &middot; ${d0} &ndash; ${d6}`:`${d0} &ndash; ${d6}`;
+  const g=document.getElementById('dg');g.innerHTML='';
+  for(let i=0;i<7;i++){const el=document.createElement('div');el.className='dy';el.id='d'+i;g.appendChild(el);await rd(i)}
+  await us();
+  updateMealTabs();
+}
+
+async function us(){
+  const data=await ld();let ts=0,tm=0,tw=0,th=0;
+  for(let i=0;i<7;i++){const d=gd(data,i);ts+=d.sport.length;tm+=[d.meals.m,d.meals.l,d.meals.d].filter(x=>x&&x.trim()).length;tw+=d.water;th+=(d.habits||[]).length}
+  document.getElementById('sm').innerHTML=`<div class="si"><span class="v">${ts}</span> activities</div><div class="si"><span class="v">${tm}</span> meals</div><div class="si"><span class="v">${tw}</span> glasses</div><div class="si"><span class="v">${th}</span>/${H.length*7} habits</div>`;
+}
+
+function cw(dir){wo+=dir;rw()}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// Init — check if already logged in
+(async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(session)await onAuth(session);
+})();
+</script>
+</body>
+</html>
